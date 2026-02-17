@@ -1,66 +1,132 @@
-# CJ ICE SHOPZ (React + Node.js + Postgres)
+# Processed Food Inventory Management System
 
-## Quick Start
+Spring Boot + MySQL + HTML/CSS/JavaScript inventory platform for finished processed food products.
 
-1) Server
+## Features
+- Product, Category, Supplier management
+- Stock In / Stock Out with transaction history
+- Expiry tracking and low-stock alerts
+- Barcode scan (camera/manual) + barcode search
+- Invoice creation with stock deduction
+- PDF export for invoices and product list
+- Dashboard analytics:
+  - Monthly sales (from January 2026)
+  - Top-selling category pie chart
+  - Click pie segment to see top sold products with images
+- Product image upload (JPG/JPEG/PNG, max 2MB)
+- Role-based access: `ADMIN`, `STAFF`, `VIEWER`
+- Dark mode + mobile responsive sidebar UI
+
+## Tech Stack
+- Java 17+ (tested with Java 21)
+- Spring Boot 3
+- Spring Security
+- Spring Data JPA (Hibernate)
+- MySQL 8
+- Thymeleaf templates + vanilla JS/CSS
+- OpenPDF for PDF generation
+
+## Project Structure
 ```
-cd server
-npm install
-npm run dev
+src/main/java/com/processedfood/inventory/
+  config/
+  controller/
+  dto/
+  exception/
+  model/
+  repository/
+  service/
+src/main/resources/
+  templates/
+  static/
 ```
 
-2) Client (new terminal)
-```
-cd client
-npm install
-npm run dev
-```
+## Prerequisites
+1. Java JDK installed (`java -version`)
+2. Maven installed (`mvn -version`)
+3. MySQL running locally
 
-Open the Vite URL printed in the client terminal.
+## Database Configuration
+Configured in `src/main/resources/application.properties`:
+- URL: `${DB_URL}` (default: local `processed_food_inventory`)
+- Username: `${DB_USER}` (default: `root`)
+- Password: `${DB_PASSWORD}` (default: `root123`)
 
-## Default Admin
+You can override at runtime:
+- PowerShell:
+  - `$env:DB_USER="root"`
+  - `$env:DB_PASSWORD="root123"`
+  - `$env:DB_URL="jdbc:mysql://localhost:3306/processed_food_inventory?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`
 
-- Email: admin@example.com
-- Password: admin123
+## Run Locally
+1. Open terminal in project folder:
+   - `Y:\Inventory Management`
+2. Run:
+   - `mvn spring-boot:run`
+3. Open:
+   - `http://localhost:8080`
 
-## Notes
+## Default Users
+- Admin: `admin / admin123`
+- Staff: `staff / staff123`
+- Viewer: `viewer / viewer123`
 
-- Postgres is used for persistence (auto-creates tables on server start).
-- Use `DATABASE_URL` for deployment (Render Postgres provides this).
-- Local fallback config is available via `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
-- Configure via `server/.env` (copy from `.env.example`).
-- CORS is enabled for local dev.
-- Checkout generates a bill and creates an order in Postgres.
-- Categories and products can be added from the Admin page.
-- Image uploads are stored locally in `server/uploads` and served at `/uploads/*`.
-- Admin can edit/delete products, categories, ads, and quotes, and download invoices.
+## Role Permissions
+- `ADMIN`
+  - Full create/update/delete access
+  - Can manage users
+  - Can delete stock transactions, invoices, users
+- `STAFF`
+  - Operational create/update actions (products, stock, invoices, etc.)
+  - No user management
+- `VIEWER`
+  - Read-only access to inventory, reports, dashboard
 
----
+## Image Upload Behavior
+- Upload folder: `src/main/resources/static/uploads/`
+- Allowed formats: JPG, JPEG, PNG
+- Max file size: 2MB
+- If no image is uploaded, placeholder image is used
 
-# Processed Food Inventory (Spring Boot + MySQL)
+## Important API Endpoints
+- Auth:
+  - `GET /api/auth/me`
+- Dashboard:
+  - `GET /api/dashboard/summary`
+  - `GET /api/dashboard/top-category-products/{categoryId}`
+- Products:
+  - `GET /api/products`
+  - `POST /api/products` (multipart)
+  - `PUT /api/products/{id}` (multipart)
+  - `DELETE /api/products/{id}`
+  - `GET /api/products/barcode/{barcode}`
+  - `GET /api/products/export/pdf`
+- Stock:
+  - `POST /api/stock/adjust`
+  - `GET /api/stock/transactions`
+  - `DELETE /api/stock/transactions/{id}` (admin)
+- Invoices:
+  - `GET /api/invoices`
+  - `POST /api/invoices`
+  - `GET /api/invoices/{id}/pdf`
+  - `DELETE /api/invoices/{id}` (admin)
+- Users (admin):
+  - `GET /api/users`
+  - `POST /api/users`
+  - `DELETE /api/users/{id}`
 
-This repo now also includes a full Spring Boot inventory system in the root `src/` with:
+## .gitignore / Safe Upload Notes
+- `target/` is ignored
+- Runtime uploads are ignored:
+  - `src/main/resources/static/uploads/*`
+  - except `.gitkeep`
+- IDE/system artifacts are ignored
 
-- Product, category, supplier, stock, invoice modules
-- Product image upload (`/static/uploads`, JPG/JPEG/PNG, 2MB max)
-- Barcode scan/search support (camera + manual)
-- Invoice generation + PDF export
-- Products PDF export
-- Dark mode toggle (stored in `localStorage`)
-- Spring Security login
+Before pushing:
+1. Ensure no sensitive credentials are committed
+2. Ensure only source code + docs are tracked
+3. Run `git status` and review staged files (you should see deletions from `target/` and uploaded runtime images)
 
-## Run
-
-1. Ensure MySQL is running and credentials match:
-   - username: `root`
-   - password: `root123`
-   - database: `processed_food_inventory`
-2. Run Spring Boot from repo root:
-   - IntelliJ: run `ProcessedFoodInventoryApplication`
-   - VS Code terminal (with Maven installed): `mvn spring-boot:run`
-3. Open `http://localhost:8080`
-
-## Default Admin
-
-- Username: `admin`
-- Password: `admin123`
+## Build Check
+- Compile:
+  - `mvn -q -DskipTests compile`

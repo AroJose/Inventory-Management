@@ -1,0 +1,20 @@
+# Maven / Java
+target/
+*.class
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime uploads (keep folder, ignore files)
+src/main/resources/static/uploads/*
+!src/main/resources/static/uploads/.gitkeep
+
+# Optional local overrides
+application-local.properties
