@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processed Food Inventory</title>
+    <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="top-nav">
+    <button id="menuBtn" class="icon-btn mobile-only" aria-label="Open menu">☰</button>
+    <div class="brand">Processed Food Inventory</div>
+    <nav id="mainNav">
+        <a href="#" data-view="dashboard" class="active">Dashboard</a>
+        <a href="#" data-view="products">Products</a>
+        <a href="#" data-view="categories">Categories</a>
+        <a href="#" data-view="suppliers">Suppliers</a>
+        <a href="#" data-view="stock">Stock</a>
+        <a href="#" data-view="invoices">Sales / Invoice</a>
+        <a href="#" data-view="reports">Reports</a>
+        <a href="#" data-view="users" id="usersNavLink" class="hidden">Users</a>
+        <button id="themeToggle" class="icon-btn" title="Toggle dark mode" aria-label="Toggle theme"><span id="themeIcon"></span></button>
+        <form method="post" action="/logout"><button class="icon-btn">Logout</button></form>
+    </nav>
+</header>
+<div id="navOverlay" class="hidden"></div>
+
+<main class="container fade-in">
+    <section id="dashboard" class="view active-view">
+        <div id="stats" class="stats-grid"></div>
+        <div class="chart-split">
+            <div class="panel">
+                <h3>Monthly Sales (from Jan 2026)</h3>
+                <canvas id="salesChart" height="150"></canvas>
+            </div>
+            <div class="panel">
+                <h3>Top Selling Categories</h3>
+                <canvas id="categoryPieChart" height="150"></canvas>
+            </div>
+        </div>
+        <div class="panel">
+            <h3 id="topSoldTitle">Top Sold Products in Category</h3>
+            <div id="pieCategoryProducts" class="mini-list"><small>Click a pie segment to view top sold products.</small></div>
+        </div>
+        <div class="panel-grid">
+            <div class="panel"><h3>Recent Products</h3><div id="recentProducts" class="mini-list"></div></div>
+            <div class="panel"><h3>Low Stock</h3><div id="lowStockItems" class="mini-list"></div></div>
+            <div class="panel"><h3>Expiring Soon</h3><div id="expiringItems" class="mini-list"></div></div>
+        </div>
+    </section>
+
+    <section id="products" class="view">
+        <div class="toolbar">
+            <h2>Products</h2>
+            <div class="toolbar-actions">
+                <input id="searchInput" type="text" placeholder="Live search...">
+                <select id="categoryFilter"></select>
+                <label><input type="checkbox" id="lowStockFilter"> Low Stock</label>
+                <label><input type="checkbox" id="expiryFilter"> Expiring</label>
+                <button id="barcodeScanBtn" class="btn">Scan Barcode</button>
+                <button id="pdfProductsBtn" class="btn">Export PDF</button>
+                <button id="toggleViewBtn" class="btn btn-primary">Table View</button>
+                <button id="newProductBtn" class="btn btn-primary">+ Product</button>
+            </div>
+        </div>
+        <div id="productsGrid" class="product-grid"></div>
+        <div id="productsTableWrap" class="table-wrap hidden">
+            <table class="data-table">
+                <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Qty</th><th>Price</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="productsTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="categories" class="view">
+        <div class="simple-grid">
+            <div class="panel" id="categoryCreatePanel">
+                <h3>Add Category</h3>
+                <form id="categoryForm" class="stack-form">
+                    <input name="name" placeholder="Name" required>
+                    <input name="description" placeholder="Description">
+                    <button class="btn btn-primary">Save</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Category List</h3>
+                <div id="categoryList"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="suppliers" class="view">
+        <div class="simple-grid">
+            <div class="panel" id="supplierCreatePanel">
+                <h3>Add Supplier</h3>
+                <form id="supplierForm" class="stack-form">
+                    <input name="name" placeholder="Name" required>
+                    <input name="phone" placeholder="Phone">
+                    <input name="email" placeholder="Email">
+                    <input name="address" placeholder="Address">
+                    <button class="btn btn-primary">Save</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Supplier List</h3>
+                <div id="supplierList"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="stock" class="view">
+        <div class="simple-grid">
+            <div class="panel" id="stockCreatePanel">
+                <h3>Stock Update</h3>
+                <form id="stockForm" class="stack-form">
+                    <select name="productId" id="stockProductSelect" required></select>
+                    <select name="type" required><option value="IN">Stock In</option><option value="OUT">Stock Out</option></select>
+                    <input type="number" name="quantity" min="1" placeholder="Quantity" required>
+                    <input name="referenceNote" placeholder="Reference note">
+                    <button class="btn btn-primary">Update Stock</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Recent Transactions</h3>
+                <div id="stockTxList"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="invoices" class="view">
+        <div class="simple-grid">
+            <div class="panel" id="invoiceCreatePanel">
+                <h3>Create Invoice</h3>
+                <form id="invoiceForm" class="stack-form">
+                    <input name="customerName" placeholder="Customer name" required>
+                    <div id="invoiceItems"></div>
+                    <button type="button" id="addInvoiceItemBtn" class="btn">+ Add Product</button>
+                    <div id="invoiceTotal">Total: 0.00</div>
+                    <button class="btn btn-primary">Create Invoice</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Recent Invoices</h3>
+                <div id="invoiceList"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="reports" class="view">
+        <div class="panel">
+            <h3>Reports Center</h3>
+            <div id="reportStats" class="stats-grid"></div>
+        </div>
+        <div class="panel-grid">
+            <div class="panel">
+                <h3>Exports</h3>
+                <div class="stack-form">
+                    <button id="reportProductsPdfBtn" class="btn btn-primary">Download Product Report PDF</button>
+                    <button id="reportLatestInvoicePdfBtn" class="btn">Download Latest Invoice PDF</button>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Recent Invoice Reports</h3>
+                <div id="reportInvoiceList"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="users" class="view">
+        <div class="simple-grid">
+            <div class="panel">
+                <h3>Create User</h3>
+                <form id="userForm" class="stack-form">
+                    <input name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <select name="role" required>
+                        <option value="STAFF">Staff</option>
+                        <option value="VIEWER">Viewer</option>
+                    </select>
+                    <button class="btn btn-primary">Create User</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Users</h3>
+                <div id="userList"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="productModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="productModalTitle">Add Product</h3>
+        <form id="productForm" class="stack-form">
+            <input type="hidden" name="id">
+            <input name="name" placeholder="Product name" required>
+            <textarea name="description" placeholder="Description"></textarea>
+            <select name="categoryId" id="productCategorySelect" required></select>
+            <input name="brand" placeholder="Brand">
+            <input name="batchNumber" placeholder="Batch number">
+            <input name="barcode" placeholder="Barcode" required>
+            <input type="date" name="expiryDate" required>
+            <input type="number" step="0.01" min="0" name="purchasePrice" placeholder="Purchase price" required>
+            <input type="number" step="0.01" min="0" name="sellingPrice" placeholder="Selling price" required>
+            <input type="number" min="0" name="quantity" placeholder="Quantity" required>
+            <select name="supplierId" id="productSupplierSelect" required></select>
+            <label class="upload-zone" id="uploadZone">
+                <input id="imageFileInput" type="file" name="imageFile" accept="image/png,image/jpeg">
+                <span>Drop image or click to upload</span>
+                <img id="imagePreview" src="/img/placeholder.svg" alt="preview">
+            </label>
+            <div class="row-end">
+                <button type="button" id="closeProductModal" class="btn">Cancel</button>
+                <button class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Confirm Stock Action</h3>
+        <p>Are you sure you want to continue?</p>
+        <div class="row-end">
+            <button id="confirmNo" class="btn">No</button>
+            <button id="confirmYes" class="btn btn-primary">Yes</button>
+        </div>
+    </div>
+</div>
+
+<div id="barcodeModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Barcode Scanner</h3>
+        <video id="barcodeVideo" autoplay playsinline></video>
+        <input id="barcodeManualInput" placeholder="Manual barcode input">
+        <div class="row-end">
+            <button id="barcodeSearchBtn" class="btn">Search</button>
+            <button id="closeBarcodeModal" class="btn btn-primary">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastWrap"></div>
+<script src="/js/app.js"></script>
+</body>
+</html>
