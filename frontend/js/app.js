@@ -1,3 +1,6 @@
+﻿const API_BASE = (window.API_BASE_URL || "").replace(/\/$/, "") || "";
+const TOKEN_KEY = "pfims_token";
+
 const state = {
     products: [],
     categories: [],
@@ -12,18 +15,16 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
-const TOKEN_KEY = "pf_inv_token";
-
-function getToken() {
-    return localStorage.getItem(TOKEN_KEY);
-}
-
-function setToken(token) {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
+    if (document.getElementById("loginForm")) {
+        wireLogin();
+        return;
+    }
+    if (!getToken()) {
+        window.location.href = "/login.html";
+        return;
+    }
     wireNav();
     wireTheme();
     wireProductModal();
@@ -36,14 +37,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireBarcodeModal();
     wireReports();
     wireMobileMenu();
+    wireLogout();
     await loadAll();
 });
 
-const logoutBtn = $("logoutBtn");
-if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-        setToken(null);
-        location.href = "/login";
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token) {
+    localStorage.setItem(TOKEN_KEY, token);
+}
+
+function clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+}
+
+function apiUrl(path) {
+    if (!path.startsWith("/")) return `${API_BASE}/${path}`;
+    return `${API_BASE}${path}`;
+}
+
+function wireLogin() {
+    $("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = Object.fromEntries(fd.entries());
+        const res = await fetch(apiUrl("/api/auth/login"), {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.message || "Login failed");
+            return;
+        }
+        const data = await res.json();
+        setToken(data.token);
+        window.location.href = "/";
+    });
+}
+
+function wireLogout() {
+    const btn = $("logoutBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+        clearToken();
+        window.location.href = "/login.html";
     });
 }
 
@@ -133,21 +174,17 @@ function toast(msg, type = "success") {
 }
 
 async function api(url, options = {}) {
-    const headers = new Headers(options.headers || {});
+    const headers = options.headers ? {...options.headers} : {};
     const token = getToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    const isForm = options.body instanceof FormData;
-    if (!isForm && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(apiUrl(url), {...options, headers});
+    if (res.status === 401) {
+        clearToken();
+        window.location.href = "/login.html";
+        return;
     }
-    const res = await fetch(url, {...options, headers});
     if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 401 || res.status === 403) {
-            if (!location.pathname.includes("login")) {
-                location.href = "/login";
-            }
-        }
         throw new Error(data.message || "Request failed");
     }
     const contentType = res.headers.get("content-type") || "";
@@ -180,7 +217,7 @@ function listMini(id, items) {
     $(id).innerHTML = (items || []).map((p) => `
         <div class="mini-item">
             <div style="display:flex; gap:8px; align-items:center;">
-                <img src="${p.imagePath || "/img/placeholder.svg"}" alt="" onerror="this.onerror=null;this.src='/img/placeholder.svg'">
+                <img src="${resolveImage(p.imagePath)}" alt="">
                 <div><strong>${p.name}</strong><br><small>${p.quantity ?? ""}</small></div>
             </div>
         </div>
@@ -309,7 +346,7 @@ async function loadTopSoldProducts(categoryId, categoryName) {
     $("pieCategoryProducts").innerHTML = items.map((p) => `
         <div class="list-item">
             <div style="display:flex;align-items:center;gap:8px;">
-                <img src="${p.imagePath || "/img/placeholder.svg"}" alt="${p.productName}" onerror="this.onerror=null;this.src='/img/placeholder.svg'">
+                <img src="${resolveImage(p.imagePath)}" alt="${p.productName}">
                 <span>${p.productName}</span>
             </div>
             <small>Sold: ${p.soldQuantity}</small>
@@ -458,7 +495,7 @@ function cardHtml(p) {
     const exp = new Date(p.expiryDate) <= new Date(Date.now() + 7 * 86400000);
     return `
     <article class="product-card">
-        <img src="${p.imagePath || "/img/placeholder.svg"}" alt="${p.name}" onerror="this.onerror=null;this.src='/img/placeholder.svg'">
+        <img src="${resolveImage(p.imagePath)}" alt="${p.name}">
         <div class="card-actions">
             <button data-edit="${p.id}">Edit</button>
             <button data-del-product="${p.id}">Delete</button>
@@ -481,7 +518,7 @@ function tableRowHtml(p) {
     const low = p.quantity < 10 ? '<span class="badge low">Low</span>' : '';
     const exp = new Date(p.expiryDate) <= new Date(Date.now() + 7 * 86400000) ? '<span class="badge exp">Exp</span>' : '';
     return `<tr>
-        <td><img class="thumb" src="${p.imagePath || "/img/placeholder.svg"}" alt="" onerror="this.onerror=null;this.src='/img/placeholder.svg'"></td>
+        <td><img class="thumb" src="${resolveImage(p.imagePath)}" alt=""></td>
         <td>${p.name}</td><td>${p.category?.name || ""}</td><td>${p.quantity}</td>
         <td>${Number(p.sellingPrice).toFixed(2)}</td><td>${p.expiryDate}</td><td>${low}${exp}</td>
         <td><button class="btn" data-edit="${p.id}">Edit</button> <button class="btn" data-del-product="${p.id}">Delete</button></td>
@@ -573,7 +610,7 @@ function openProductModal(id = null) {
         form.sellingPrice.value = p.sellingPrice;
         form.quantity.value = p.quantity;
         form.supplierId.value = p.supplier?.id;
-        $("imagePreview").src = p.imagePath || "/img/placeholder.svg";
+        $("imagePreview").src = resolveImage(p.imagePath);
     }
     $("productModal").classList.remove("hidden");
 }

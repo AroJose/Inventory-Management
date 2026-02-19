@@ -43,7 +43,7 @@ public class ProductService {
 
     public Product save(Product product, MultipartFile imageFile) {
         validateProduct(product, null);
-        String imagePath = fileStorageService.storeProductImage(imageFile);
+        String imagePath = fileStorageService.storeProductImage(product.getName(), imageFile);
         if (imagePath != null) {
             product.setImagePath(imagePath);
         } else if (product.getImagePath() == null || product.getImagePath().isBlank()) {
@@ -68,7 +68,7 @@ public class ProductService {
         existing.setQuantity(payload.getQuantity());
         existing.setSupplier(payload.getSupplier());
 
-        String imagePath = fileStorageService.storeProductImage(imageFile);
+        String imagePath = fileStorageService.storeProductImage(payload.getName(), imageFile);
         if (imagePath != null) {
             existing.setImagePath(imagePath);
         } else if (existing.getImagePath() == null || existing.getImagePath().isBlank()) {

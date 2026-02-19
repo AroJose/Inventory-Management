@@ -41,7 +41,7 @@ public class InvoiceController {
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> invoicePdf(@PathVariable Long id) {
-        Invoice invoice = invoiceService.findById(id);
+        Invoice invoice = invoiceService.findByIdWithItems(id);
         byte[] pdf = pdfService.invoicePdf(invoice);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + invoice.getInvoiceNumber() + ".pdf")

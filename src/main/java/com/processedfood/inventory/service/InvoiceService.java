@@ -52,6 +52,11 @@ public class InvoiceService {
         return invoiceRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Invoice not found"));
     }
 
+    public Invoice findByIdWithItems(Long id) {
+        return invoiceRepository.findWithItemsById(id)
+                .orElseThrow(() -> new NoSuchElementException("Invoice not found"));
+    }
+
     @Transactional
     public Invoice create(InvoiceRequest request) {
         Invoice invoice = new Invoice();

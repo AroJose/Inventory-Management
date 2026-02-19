@@ -15,9 +15,13 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
-    private final Path uploadPath = Paths.get("src/main/resources/static/uploads");
+    private final Path uploadPath;
 
-    public String storeProductImage(MultipartFile file) {
+    public FileStorageService(@org.springframework.beans.factory.annotation.Value("${app.upload.dir:uploads}") String uploadDir) {
+        this.uploadPath = Paths.get(uploadDir);
+    }
+
+    public String storeProductImage(String productName, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return null;
         }
@@ -34,7 +38,14 @@ public class FileStorageService {
 
         try {
             Files.createDirectories(uploadPath);
-            String fileName = UUID.randomUUID() + "." + ext;
+            String base = (productName == null ? "" : productName)
+                    .toLowerCase()
+                    .replaceAll("[^a-z0-9]+", "-")
+                    .replaceAll("(^-|-$)", "");
+            if (base.isBlank()) {
+                base = "product";
+            }
+            String fileName = base + "-" + UUID.randomUUID() + "." + ext;
             Path target = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
             return "/uploads/" + fileName;
