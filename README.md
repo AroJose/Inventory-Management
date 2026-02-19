@@ -46,6 +46,8 @@ src/main/resources/
 2. Maven installed (`mvn -version`)
 3. MySQL running locally
 
+If you download the repo as a ZIP on another computer, install Java + Maven and start MySQL before running.
+
 ## Database Configuration
 Configured in `src/main/resources/application.properties`:
 - URL: `${DB_URL}` (default: local `processed_food_inventory`)
@@ -57,6 +59,11 @@ You can override at runtime:
   - `$env:DB_USER="root"`
   - `$env:DB_PASSWORD="root123"`
   - `$env:DB_URL="jdbc:mysql://localhost:3306/processed_food_inventory?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`
+
+Create the database once (optional if `createDatabaseIfNotExist=true` in URL):
+```sql
+CREATE DATABASE processed_food_inventory;
+```
 
 ## Run Locally
 1. Open terminal in project folder:
@@ -83,7 +90,7 @@ You can override at runtime:
   - Read-only access to inventory, reports, dashboard
 
 ## Image Upload Behavior
-- Upload folder: `src/main/resources/static/uploads/`
+- Upload folder: `uploads/` (project root, persistent across restarts)
 - Allowed formats: JPG, JPEG, PNG
 - Max file size: 2MB
 - If no image is uploaded, placeholder image is used
@@ -118,7 +125,7 @@ You can override at runtime:
 ## .gitignore / Safe Upload Notes
 - `target/` is ignored
 - Runtime uploads are ignored:
-  - `src/main/resources/static/uploads/*`
+  - `uploads/*`
   - except `.gitkeep`
 - IDE/system artifacts are ignored
 
